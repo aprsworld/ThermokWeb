@@ -18,7 +18,7 @@ $l=mysql_fetch_array($query);
 
 //print_r($l);
 
-require "pieces.php";
+require $_SERVER['DOCUMENT_ROOT'] . "/ViewBuilder/pieces.php";
 
 /* 
 
@@ -131,7 +131,7 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 		function loadData(){
 			
 			//console.log("yeah");
-			var url="jsonNonView.php?station_id=<? echo $station_id; ?>";	
+			var url="http://ian.aprsworld.com/ViewBuilder/jsonNonView.php?station_id=<? echo $station_id; ?>";	
 			$.getJSON(url, 
 				function(data) {
 					

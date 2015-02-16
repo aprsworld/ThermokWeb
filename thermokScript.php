@@ -1,6 +1,6 @@
 <?
 
-/* The script contained within this area only applies to Thermok chart */
+/* The script contained within this area only applies to Thermok */
 
 $chartHours = 24;
 if ( isset($_COOKIE["chartHours"]) ) {
@@ -43,6 +43,7 @@ var plot;
 
 function noTimerLoad(){
 	var url="jsonNonView.php?station_id=<? echo $station_id; ?>";	
+	console.log("notimerload");
 	$.getJSON(url, 
 		function(data) {
 			
@@ -87,7 +88,7 @@ function switchDegUnit(){
 	}
 		
 	noTimerLoad();
-	
+	plot.setupGrid();
 
 	
 
@@ -218,6 +219,14 @@ function obToAr(obj){
 	return ar;
 }
 
+var tickFormat = function (val) {
+	if(getCookie("deg") == "F"){				
+		return (val* 9 / 5 + 32)+"&deg;F";
+	} else {
+		return val+"&deg;C";
+	} 
+}
+
 function plotGraph(hours){
 
 	if ( null == hours ) hours = 24;
@@ -225,7 +234,7 @@ function plotGraph(hours){
 	setCookie('chartHours',hours,365);
 
 
-	var url="json.php?hours="+hours+"&station_id=<? echo $station_id; ?>";
+	var url="chartDataJson.php?hours="+hours+"&station_id=<? echo $station_id; ?>";
 	$.getJSON(url, function(data) {
 		//console.log(data[0]);
 		miny = data.minY;
@@ -308,10 +317,7 @@ function plotGraph(hours){
 			},
 			yaxis: {
 				position: "left",
-				tickFormatter: function (val) {
-					
-					return val+"&deg;C / "+(val* 9 / 5 + 32)+"&deg;F";
-				},
+				tickFormatter: tickFormat,
 				
 				<?
 				if ( "Auto" == $yScaleMode ) {
