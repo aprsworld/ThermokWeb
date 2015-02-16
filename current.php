@@ -5,6 +5,7 @@ ini_set('display_startup_errors',1);
 error_reporting(-1);
 //*/
 require $_SERVER['DOCUMENT_ROOT'] . '/world_config.php';
+require 'ViewBuilderConfig.php';
 
 $station_id=$_REQUEST["station_id"];
 
@@ -14,11 +15,9 @@ $db = _open_mysql('worldData');
 $sql=sprintf("SELECT * FROM thermok4_labels WHERE serialNumber='%s'",$station_id);
 $query=mysql_query($sql,$db);
 $l=mysql_fetch_array($query);
-
-
 //print_r($l);
 
-require $_SERVER['DOCUMENT_ROOT'] . "/ViewBuilder/pieces.php";
+require VIEW_BUILDER_LOC . "/pieces.php";
 
 /* 
 
@@ -131,7 +130,7 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 		function loadData(){
 			
 			//console.log("yeah");
-			var url="http://ian.aprsworld.com/ViewBuilder/jsonNonView.php?station_id=<? echo $station_id; ?>";	
+			var url="<? printf(VIEW_BUILDER_ADDR); ?>/jsonNonView.php?station_id=<? echo $station_id; ?>";	
 			$.getJSON(url, 
 				function(data) {
 					
@@ -242,6 +241,28 @@ if (isset($_COOKIE["deg"])){
 		$oDeg="C";
 	}
 }	
+
+?>
+
+<?
+/* settings defaults */
+if ( !isset($_COOKIE["yScaleMode"]) ) {
+	$_COOKIE["yScaleMode"] = "Auto";
+}
+
+
+if ( !isset($_COOKIE["refSec"]) ) {
+	$_COOKIE["refSec"] = "60";
+}
+
+if ( !isset($_COOKIE["deg"]) ) {
+	$_COOKIE["deg"] = "C";
+}
+
+
+if ( !isset($_COOKIE["wideScreen"]) ) {
+	$_COOKIE["wideScreen"] = "false";
+}
 
 ?>
 

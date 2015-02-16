@@ -27,7 +27,7 @@ if ( "Auto" == $yScaleMode ) {
 ?>
 $(document).ready(function(){
 
-	<? if ( $_COOKIE["yScaleMode"] == "Auto" ) { ?>
+	<? if ( !isset($_COOKIE["yScaleMode"]) || $_COOKIE["yScaleMode"] == "Auto" ) { ?>
 	disableManual();
 	<? } ?>
 
@@ -42,7 +42,7 @@ $(document).ready(function(){
 var plot;
 
 function noTimerLoad(){
-	var url="jsonNonView.php?station_id=<? echo $station_id; ?>";	
+	var url="<? printf(VIEW_BUILDER_ADDR); ?>/jsonNonView.php?station_id=<? echo $station_id; ?>";	
 	console.log("notimerload");
 	$.getJSON(url, 
 		function(data) {
@@ -87,9 +87,9 @@ function switchDegUnit(){
 		$("#degUnit1").html("&deg;F");
 	}
 		
-	noTimerLoad();
+	//noTimerLoad();
 	plot.setupGrid();
-
+	plot.draw();
 	
 
 }
@@ -207,7 +207,8 @@ function updateHours(){
 
 	$("#titleChartHours").html(hours);	
 
-	plotGraph(hours);
+	window.location.replace("?station_id=<? echo $station_id; ?>");
+	//plotGraph(hours);
 
 }
 
