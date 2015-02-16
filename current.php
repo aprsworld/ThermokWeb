@@ -4,10 +4,71 @@ ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
 error_reporting(-1);
 //*/
+require $_SERVER['DOCUMENT_ROOT'] . '/world_config.php';
+
+$station_id=$_REQUEST["station_id"];
+
+$pScript="";
+$pRow="";
+$db = _open_mysql('worldData');
+$sql=sprintf("SELECT * FROM thermok4_labels WHERE serialNumber='%s'",$station_id);
+$query=mysql_query($sql,$db);
+$l=mysql_fetch_array($query);
+
+
+//print_r($l);
+
+require $_SERVER['DOCUMENT_ROOT'] . "/ViewBuilder/pieces.php";
+
+/* 
+
+   place table row instructions here 
+   if you use one argument, then the title will be the same as the column name
+   if you use two arguments, then the title will be the second argument
+
+*/
+
+headline("Current Values");
+simpleDataRow("localTime","Report Date:");
+ageRow();
+
+
+/* Temperatures */
+if ("" != $l["r0L"]) headline("Temperature");
+
+for ( $i = 0 ; $i < 4 ; $i++ ){
+	if ("" != $l["t".$i."L"]) toFixedDataRow("t".$i,$l["t".$i."L"],1," &deg;C");
+}
+
+/* analogue channels */
+if ( ""!=$l["v0L"] || ""!=$l["v1L"] || ""!=$l["v2L"] || ""!=$l["v3L"] ) headline("Voltage");
+
+for ( $i=0 ; $i<4 ; $i++ ) {
+	if ("" != $l["v".$i."L"]) toFixedDataRow("vin".$i,$l["v".$i."L"],2," VDC");
+}
+
+/* relays */
+if ( ""!=$l["r0L"] || ""!=$l["r1L"] || ""!=$l["r2L"] ) headline("Relay States");
+
+for ( $i = 0 ; $i < 4 ; $i++ ){
+	if ("" != $l["r".$i."L"]) relayDataRow("relay".$i,$l["r".$i."L"]);
+}
+
+/* counters */
+if ( ""!=$l["c0L"] ) headline("Event Counter");
+
+if ("" != $l["c0L"]) toFixedDataRow("pulseCount",$l["c0L"],0," gallons");
+
+$wideScreen = false;
+if ( isset($_COOKIE["wideScreen"]) ) {
+	$wideScreen = $_COOKIE["wideScreen"]=="true";
+}
+
+/* -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- */
+
+
 $station_id=strtoupper($_REQUEST["station_id"]);
 
-require_once $_SERVER["DOCUMENT_ROOT"] . "/world_config.php";
-$db=_open_mysql("worldData");
 
 /* if not public, then we need to be authorized */
 if ( 0==authPublic($station_id,$db) ) {
@@ -25,416 +86,148 @@ $deviceInfo=mysql_fetch_array($query);
 if ( "" != $deviceInfo["displayName"] ) $displayName=$deviceInfo["displayName"]; else $displayName=$station_id;
 $displayName=htmlspecialchars($displayName);
 
-$head_message=sprintf('<script src="/sweetalert-master/lib/sweet-alert.min.js"></script> <link rel="stylesheet" type="text/css" href="/sweetalert-master/lib/sweet-alert.css">');
 $title=$headline=$displayName . " <br />Current Conditions";
-$refreshable=1;
+//$refreshable=1;
+
+$headMessage='
+	<link rel="stylesheet" href="http://data.aprsworld.com/world_style.css" type="text/css"/>
+
+	<link rel="icon" type="image/gif" href="http://data.aprsworld.com/favicon.gif">';
+
 require $_SERVER["DOCUMENT_ROOT"] . "/world_head.php";
 require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 
 
-$chartHours = 24;
-if ( isset($_COOKIE["chartHours"]) ) {
-	$chartHours = $_COOKIE["chartHours"];
-}
-
-
-$yScaleMode="auto";
-$yMin=-10;
-$yMax=100;
-
-
-if ( isset( $_COOKIE["yScaleMode"] ) ) $yScaleMode = $_COOKIE["yScaleMode"];
-
-if ( isset( $_COOKIE["yMin"] ) ) $yMin = $_COOKIE["yMin"];
-
-if ( isset( $_COOKIE["yMax"] ) ) $yMax = $_COOKIE["yMax"];
 
 
 ?>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-<script language="javascript" type="text/javascript" src="http://ian.aprsworld.com/javascript/timeFunctions.js"></script>
-<script language="javascript" type="text/javascript" src="/data/date.js"></script>
-<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="/data/excanvas.min.js"></script><![endif]-->
-<script language="javascript" type="text/javascript" src="/data/jquery.flot.js"></script>
-<script language="javascript" type="text/javascript" src="/data/jquery.flot.threshold.js"></script>
-<script>
 
-var plot;
+	<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.3.min.js"></script><script type="text/javascript" src="/data/jQueryRotate.2.2.js"></script>
+	<script language="javascript" type="text/javascript" src="http://ian.aprsworld.com/javascript/timeFunctions.js"></script>
+	<script language="javascript" type="text/javascript" src="/data/date.js"></script>
+	<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="/data/excanvas.min.js"></script><![endif]-->
+	<script language="javascript" type="text/javascript" src="/data/jquery.flot.js"></script>
+	<script language="javascript" type="text/javascript" src="/data/jquery.flot.threshold.js"></script>
+	<script>
 
-function switchDegUnit(){
-	//console.log($("#degUnit").html());
-	if( -1 != $("#degUnit").html().indexOf("C") ){
-		$("#degUnit").html("&deg;F");
-		$("#degUnit1").html("&deg;F");
-		$("#degUnit2").html("&deg;C");
-	} else {
-		$("#degUnit").html("&deg;C");
-		$("#degUnit1").html("&deg;C");
-		$("#degUnit2").html("&deg;F");
-	}
+	<? 
+	/* Chart related javascript */
+	require "thermokScript.php"; 
 
-}
+	?>
 
-function setYMinMaxButton(){
-	if( -1 != $("#degUnit").html().indexOf("C") ){
-		setYMinMax($("#yScaleMin").val(),$("#yScaleMax").val());
-		setCookie('deg',"C",365);
-	} else {
-		setYMinMax((($("#yScaleMin").val() -32) * 5/9) ,(($("#yScaleMax").val() -32) * 5/9));
-		setCookie('deg',"F",365);
-	}
+	</script>
 
-	setCookie('yMin',$("#yScaleMin").val(),365);
-	setCookie('yMax',$("#yScaleMax").val(),365);
+	<script>
+		$(document).ready(function(){
 
-}
-
-function setYMinMax(a, b) {
+			loadData();
+			pageTimer();
 	
-	plot.getOptions().yaxes[0].min = a;
-	plot.getOptions().yaxes[0].max = b;
-	plot.setupGrid();
-	plot.draw();
-
-}
-
-function yScaleSettings(){
-//	console.log($("#yscale").html());
-	if ( "auto" == $("#yscale").html()) {
-		$("#yscale").html("manual");
-		$(".yScaleSettings").show();
-		setCookie('yScaleMode',"manual",365);
-		setYMinMaxButton();
-	} else {
-		$("#yscale").html("auto");
-		$(".yScaleSettings").hide();
-		setCookie('yScaleMode',"auto",365);
-		setYMinMax(-10,100);		
-	}
-}
-
-function toggleAlarmPos(){
-
-
-	if ( "0px" == $("#chartControl").css("bottom") ) {
-
-		alarmUp();
-
-	} else {
-
-		alarmDown();
-
-	}
-}
-
-
-function setCookie(c_name,value,exdays){
-		var exdate=new Date();
-		exdate.setDate(exdate.getDate() + 30);
-		var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-		document.cookie=c_name + "=" + c_value;
-}
-
-function updateHours(){
-
-	var hours = $("#hours").val();
-
-	if ( "" == hours || hours < 1 || hours > 168 ) {
-		//alert("Numbers between 1 and 168 only");
-		swal("Value outside of range!", "Only numbers between 1 and 168 are allowed")
-		$("#hours").val("");
-		return;
-	}
-
-	$("#titleChartHours").html(hours);	
-
-	plotGraph(hours);
-
-}
-
-function obToAr(obj){
-	var ar = [];
-	for (key in obj) {
-		if (obj.hasOwnProperty(key)) ar.push([key,obj[key]]);
-	}
-	return ar;
-}
-
-function plotGraph(hours){
-
-	if ( null == hours ) hours = 24;
-
-	setCookie('chartHours',hours,365);
-
-
-	var url="json.php?hours="+hours+"&station_id=<? echo $station_id; ?>";
-	$.getJSON(url, function(data) {
-		//console.log(data[0]);
-		
-		var ext = obToAr(data[0]);
-		var ce = obToAr(data[1]);
-		var topSh = obToAr(data[2]);
-		var botSh = obToAr(data[3]);
-		var relayA = obToAr(data[4]);
-		var relayB = obToAr(data[5]);
-		var relayC = obToAr(data[6]);
-
-		var lineObj = {fill: 0,lineWidth: 1};
-		var switchLine = {fill: .5,lineWidth: 0};
-
-		plot = $.plot("#placeholder", [{
-			data: relayA,
-			lines: switchLine,
-			color: 'purple'
-			
-	
-		},{
-			data: relayB,
-			lines: switchLine,
-			color: '#B2B2B2'
-	
-		},{
-			data: relayC,
-			lines: switchLine,
-			color: '#009900'
-	
-		},{
-			data: ext,
-			lines: lineObj,
-			color: 'red'
-	
-		},{
-			data: ce,
-			lines: lineObj,
-			color: 'blue'
-		},{
-			data: topSh,
-			lines: lineObj,
-			color: 'yellow'
-	
-		},{
-			data: botSh,
-			lines: lineObj,
-			color: 'green'
-	
-		}], {
-			grid: { hoverable: false, clickable: false },
-					
-			xaxis: {
-				ticks: 6,
-				tickFormatter: function (val) {
-					var xdate = new Date(val * 1000)
-					return xdate.toString("HH:mmtt<br>M/d")
-				}
-			},
-			yaxis: {
-				position: "left",
-				tickFormatter: function (val) {
-					
-					return val+"&deg;C / "+(val* 9 / 5 + 32)+"&deg;F";
-				},
-				
-				<?
-				if ( "auto" == $yScaleMode ) {
-				?>
-				min: -10,
-				max: 100 
-				<?
-				} else {
-				?>
-				min: <? printf($yMin); ?>,
-				max: <? printf($yMax); ?> 
-				<?
-				}
-
-				?>
-			}
 		});
-	});
+		var pageSeconds = 0;
+		var chartAge = 0;
+		var lastDate = "";
+		function loadData(){
+			
+			//console.log("yeah");
+			var url="http://ian.aprsworld.com/ViewBuilder/jsonNonView.php?station_id=<? echo $station_id; ?>";	
+			$.getJSON(url, 
+				function(data) {
+					
+					if(lastDate!=data.packet_date){
+						pageSeconds=0;//data.ageSeconds;
+						lastDate=data.packet_date;
+						console.log("new current data");
+					}
+					<? echo $pScript; ?>
 
+					if ( getCookie("deg") == "F" ) {
+						console.log("change stuff");
+						$('#t0').html(parseFloat(data.t0* 9 / 5 + 32).toFixed(1)+" &deg;F");
+						$('#t1').html(parseFloat(data.t1* 9 / 5 + 32).toFixed(1)+" &deg;F");
+						$('#t2').html(parseFloat(data.t2* 9 / 5 + 32).toFixed(1)+" &deg;F");
+						$('#t3').html(parseFloat(data.t3* 9 / 5 + 32).toFixed(1)+" &deg;F");
 
-}
+					}
+				});
+			setTimeout(loadData,10000);
+		}
 
+		function pageTimer(){
+			$("#pageTimer").html(secToTimeDate(pageSeconds));
+			$("#chartTimer").html(secToTimeDate(chartAge));
+			$("#pageAge").html(secToTimeDate(pageSeconds));
+			pageSeconds++;
+			chartAge++;
+			setTimeout(pageTimer, 1000);
+		}
+	</script>
 
-
-
-$( document ).ready(function(){
-	plotGraph(<? echo $chartHours; ?>);
-});
-</script>
-
-
-<?
-
-$sql=sprintf("SELECT status.packet_date, sec_to_time(unix_timestamp()-unix_timestamp(packet_date)) AS ageTime,(unix_timestamp()-unix_timestamp(packet_date)) AS ageSeconds,deviceInfo.owner, deviceInfo.updateRate, deviceInfo.timeZone, deviceInfo.timeZoneOffsetHours, DATE_ADD(status.packet_date,INTERVAL deviceInfo.timeZoneOffsetHours HOUR) AS packet_date_local FROM status LEFT JOIN (deviceInfo) ON (status.serialNumber=deviceInfo.serialNumber) WHERE status.serialNumber='%s'",$station_id);
-$query=mysql_query($sql,$db);
-$deviceInfo=mysql_fetch_array($query);
-
-/* calculate a human readable report received at */
-$s="";
-if ( $deviceInfo["ageSeconds"] > 59 ) {
-	$rr=sprintf("Report received %s (hours:minutes:seconds) ago.",$deviceInfo["ageTime"]);
-} else {
-	if ( 1 != $deviceInfo["ageSeconds"] ) 
-		$s="s";
-	else
-		$s='';
-
-	$rr=sprintf("Report received %d second%s ago.",$deviceInfo["ageSeconds"],$s);
-}
-?>
-
-<? if ( $deviceInfo["ageSeconds"] > 15*60 ) { ?>
-<div class="caution">
-<p>
-This station is marked as supplying live data, however the data appears to be old. Please check the age of the data carefully before using it!
-</p>
-</div>
-<?
-} 
-
-/* pull actual last record */
-$sql=sprintf("SELECT * FROM thermok4_%s WHERE packet_date='%s'",$station_id,$deviceInfo["packet_date"]);
-$sql=sprintf("SELECT * FROM thermok4_%s ORDER BY packet_date DESC LIMIT 1",$station_id);
-$query=mysql_query($sql,$db);
-$r=mysql_fetch_array($query);
-
-/* column labels and units */
-$sql=sprintf("SELECT * FROM thermok4_labels WHERE serialNumber='%s'",$station_id);
-$query=mysql_query($sql,$db);
-$l=mysql_fetch_array($query);
-
-?>
-<div align="center">
-<table>
-	<tr>
-		<th colspan="2">Current Values</th>
-	</tr>
-	<tr>
-		<th>Report Date:</th>
-		<td>
-			<? echo $deviceInfo["packet_date_local"] . " " . $deviceInfo["timeZone"]; ?>
-			(<? echo $r["packet_date"]; ?> UTC)<br />
-			<? echo $rr; ?>
-		</td>
-	</tr>
-<? 
-/* anemometers / pulse measurement */
-if ( ""!=$l["t0L"] || ""!=$l["t1L"] || ""!=$l["t2L"] || ""!=$l["t3L"] ) { 
-?>
-	<tr>
-		<th colspan="2">Temperature</th>
-	</tr>
-<? 
-} 
-$colors=array("Red","Blue","Yellow","Green");
-for ( $i=0 ; $i<4 ; $i++ ) {
-	$colLabel=$l["t" . $i . "L"];
-	$colUnits=$l["t" . $i . "U"];
-
-	if ( ""==$colLabel )
-		continue;
-?>
-	<tr>
-		<th><? printf("%s (%s): ",$colLabel,$colors[$i]); ?></th>
-		<td>
-<? 
-$c=sprintf("%0.1f",$r["t" . $i]);
-$k=sprintf("%0.1f",$r["t" . $i]+273.15);
-$f=sprintf("%0.1f",1.8*$r["t" . $i]+32);
-
-
-/* replace our units string with our temperature values */
-$t=str_replace('c',$c,$colUnits);
-$t=str_replace('f',$f,$t);
-$t=str_replace('k',$k,$t);
-
-if ( "-99.9" == $r["t" . $i] || "-1000.0" == $r["t" . $i] )
-	echo "Not Connected";
-else
-	echo $t;
-
-//	printf("%.1f %s %s",$r["t" . $i],$colUnits,$du); 
-?>
-		</td>
-	</tr>
-<?
-}
-
-/* analog channels */
-if ( ""!=$l["v0L"] || ""!=$l["v1L"] || ""!=$l["v2L"] || ""!=$l["v3L"] ) { 
-?>
-	<tr>
-		<th colspan="2">Voltage</th>
-	</tr>
-<? 
-} 
-
-/* analog channels */
-for ( $i=0 ; $i<4 ; $i++ ) {
-	$colLabel=$l["v" . $i . "L"];
-	$colUnits=$l["v" . $i . "U"];
-
-	if ( ""==$colLabel )
-		continue;
-
-	if ( 1 == $l["dualUnits"] ) 
-		$colUnits="";
-
-?>
-	<tr>
-		<th><? echo $colLabel; ?>:</th>
-		<td><? printf("%0.2f %s",$r["vin" . $i],$colUnits);  ?></td>
-	</tr>
-<?
-}
-
-/* relay channels */
-if ( ""!=$l["r0L"] || ""!=$l["r1L"] || ""!=$l["r2L"] ) { 
-?>
-	<tr>
-		<th colspan="2">Relay States</th>
-	</tr>
-<? 
-} 
-
-/* relays */
-for ( $i=0 ; $i<4 ; $i++ ) {
-	$colLabel=$l["r" . $i . "L"];
-
-	if ( ""==$colLabel )
-		continue;
-
-
-	if ( 1 == $r["relay" . $i] ) 
-		$state='On';
-	else
-		$state='Off';
-
-?>
-	<tr>
-		<th><? echo $colLabel; ?>:</th>
-		<td><? echo $state; ?></td>
-	</tr>
-<?
-}
-
-
-$counterLabel=$l["c0L"];
-$counterUnits=$l["c0U"];
-if ( "" != $counterLabel || "" != $counterUnits ) {
-?>
-	<tr>
-		<th colspan="2">Event Counter</th>
-	</tr>
-	<tr>
-		<th><? echo $counterLabel; ?>:</th>
-		<td><? printf("%d %s",$r["pulseCount"],$counterUnits); ?></td>
-	</tr>
-<?
-}
-?>
+<? if($wideScreen) echo "<div style=\"margin-left:auto;margin-right:auto;display:table;border:none;\">" ?>
+<table id="currentTable" style="margin-left: auto; margin-right:auto;padding-right:20px;<? if($wideScreen) echo "display:table-cell;border:none;" ?>">
+<? echo $pRows; ?>
 </table>
+
+<!-- This is added specifically for Thermok -->
+
+<div id="placeholder" style="width: 75%; height: 450px; font-size: 14px;line-height: 1em;overflow: visible; overflow-x: hidden;margin-left:auto;margin-right:auto;padding-left:40px;<? if($wideScreen) echo "display:table-cell;" ?>"></div>
+<? if($wideScreen) echo "<div style=\"clear:both;\"></div></div>" ?>
+<div style="margin: 20px; border: solid;border-width: 1px;margin-left: auto; margin-right: 10%;padding: 10px;display: table;">
+	<table style="font-weight: bold; border: none; margin-left: auto; margin-right: auto; padding: 30px;">
+		<tr>
+			<td style="width: 25px;">
+				<div style="background-color: red; width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div>
+			</td>
+
+			<td style="font-size: .75em;"><? echo $l["t" . 0 . "L"]?></td>
+
+			<td style="width:10px; border: none;"></td>
+
+			<td style="width: 25px">
+				<div style="background-color: blue; width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div>
+			</td>
+
+			<td style="font-size: .75em;"><? echo $l["t" . 1 . "L"]?></td>
+
+			<td style="width:10px; border: none;"></td>
+
+			<td style="width: 25px">
+				<div style="background-color: yellow; width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div>
+			</td>
+
+			<td style="font-size: .75em;"><? echo $l["t" . 2 . "L"] ?></td>
+
+			<td style="width:10px; border: none;"></td>
+
+			<td style="width: 25px">
+				<div style="background-color: green; width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div>
+			</td>
+
+			<td style="font-size: .75em;"><? echo $l["t" . 3 . "L"] ?></td>
+
+		<?
+		 if ( ""!=$l["r0L"] ) { 
+		?>
+			<td style="width:10px; border: none;"></td>				
+			<td style="width: 25px"><div style="background-color: rgba(128, 0, 128, 0.5); width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div></td><td style="font-size: .75em;"><? echo $l["r" . 0 . "L"]?></td>
+		<? }
+		 if ( ""!=$l["r1L"] ) { ?>
+			<td style="width:10px; border: none;"></td>
+			<td style="width: 25px"><div style="background-color: rgba(178, 178, 178, 0.5); width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div></td><td style="font-size: .75em;"><? echo $l["r" . 1 . "L"]?></td>
+		<? } 
+		 if ( ""!=$l["r2L"] && false ) { ?>
+			<td style="width:10px; border: none;"></td>
+			<td style="width: 25px"><div style="background-color: rgba(0, 153, 0, 0.5); width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div></td><td style="font-size: .75em;"><? echo $l["r" . 2 . "L"]?></td>
+		<? } 
+		if ( ""!=$l["r1L"] && ""!=$l["r0L"] ) { ?>
+			<td style="width:10px; border: none;"></td>
+			<td style="width: 25px"><div style="background-color: rgba(121, 89, 121, 0.75); width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div></td><td style="font-size: .75em;"><? echo $l["r" . 0 . "L"]." and ". $l["r" . 1 . "L"]?></td>
+		<? } 
+		?>
+		</tr>
+	</table>
+</div>
 
 <?
 
@@ -452,84 +245,70 @@ if (isset($_COOKIE["deg"])){
 
 ?>
 
-<h4>Last <span id="titleChartHours"><? echo $chartHours; ?></span> hours</h4>
-
-<div id="placeholder" style="width: 100%; height: 450px; font-size: 14px;line-height: 1em;overflow: visible; overflow-x: hidden;"></div>
-
-<div style="display: table;">
-
-	<div style="display: table-cell; vertical-align: middle;">
-		<table style="font-weight: bold; border: none; ">
-			<tr>
-				<td style="width: 25px;"><div style="background-color: red; width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></div></td><td style="font-size: .75em;"><? echo $l["t" . 0 . "L"]?></td>
-			</tr>
-			<tr>
-				<td style="width: 25px"><div style="background-color: blue; width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></td><td style="font-size: .75em;"><? echo $l["t" . 1 . "L"]?></td>
-			</tr>
-			<tr>
-				<td style="width: 25px"><div style="background-color: yellow; width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></td><td style="font-size: .75em;"><? echo $l["t" . 2 . "L"] ?></td>
-			</tr>
-			<tr>
-				<td style="width: 25px"><div style="background-color: green; width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></td><td style="font-size: .75em;"><? echo $l["t" . 3 . "L"] ?></td>
-	<?
-	 if ( ""!=$l["r0L"] ) { 
-	?>
-			</tr>
-			<tr>
-				<td style="width: 25px"><div style="background-color: rgba(128, 0, 128, 0.5); width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></td><td style="font-size: .75em;"><? echo $l["r" . 0 . "L"]?></td>
-	<? }
-	 if ( ""!=$l["r1L"] ) { ?>
-			</tr>
-			<tr>
-				<td style="width: 25px"><div style="background-color: rgba(178, 178, 178, 0.5); width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></td><td style="font-size: .75em;"><? echo $l["r" . 1 . "L"]?></td>
-	<? } 
-	 if ( ""!=$l["r2L"] && false ) { ?>
-			</tr>
-			<tr>
-				<td style="width: 25px"><div style="background-color: rgba(0, 153, 0, 0.5); width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></td><td style="font-size: .75em;"><? echo $l["r" . 2 . "L"]?></td>
-	<? } 
-	if ( ""!=$l["r1L"] && ""!=$l["r0L"] ) { ?>
-			</tr>
-			<tr>
-				<td style="width: 25px"><div style="background-color: rgba(121, 89, 121, 0.75); width:10px;height:10px; border: solid;margin-left:auto;margin-right:auto;"></td><td style="font-size: .75em;"><? echo $l["r" . 0 . "L"]." and ". $l["r" . 1 . "L"]?></td>
-	<? } 
-	?>
-			</tr>
-		</table>
-	</div>
-
-
-	<div style="display: table-cell; vertical-align: middle; text-align: left; ">
-		<table style="">
+		<table style="margin-left: auto; margin-right: auto;margin-bottom: 30px;">
 			<tr>	
-				<th colspan="2">Chart Settings</th>
+				<th onclick="collapseSettings()" colspan="3">Chart Settings<br><span style="font-size:.75em;" >(click to hide/show)</span></th>
 			</tr>
-			<tr>
-			
-					<th>Hours:</th><td> <input type="number" min="1" max="168" value="<? echo $chartHours; ?>" id="hours" style="width: 50px;">
-					<button class="controlButton" onclick="updateHours();">Update hours</button></td>
-			
-			</tr>	
-			<tr>
-				<th>Y Scale Mode:</th>
-					<td><button class="controlButton" onclick="yScaleSettings()"><span id="yscale"><? printf($yScaleMode); ?></span></button><br>
+			<tr class="collapse">
+				<th rowspan="1">Hours:</th>
+				<td colspan="2"> 
+					<input type="number" min="1" max="168" value="<? echo $chartHours; ?>" id="hours" style="width: 50px;">
+					<button class="controlButton" onclick="updateHours();">Update hours</button>
+				</td>
 			</tr>
-			<tr class="yScaleSettings" style="<? if ( "auto" == $yScaleMode ) echo "display: none;"; ?>">	
-				<th>Y min:</th><td><input  type="number"  value="<? printf($yMin); ?>" id="yScaleMin" style="width: 50px;"><span id="degUnit">&deg;<? echo $deg; ?><span></td>
+			<tr class="collapse">
+				<th rowspan="1">Y Scale Mode:</th>
+				<td colspan="2" id="mode">
+					<input onclick="yScaleSettings()" name="scaleRadio" type="radio" value="Auto" <? if ( "Auto"  == $_COOKIE["yScaleMode"] ) printf("checked") ?>>Auto</option><br>
+					<input onclick="yScaleSettings()" name="scaleRadio" type="radio" value="Manual" <? if ( "Manual"  == $_COOKIE["yScaleMode"] ) printf("checked") ?>>Manual</option>					
+				</td>
 			</tr>
-			<tr class="yScaleSettings" style="<? if ( "auto" == $yScaleMode ) echo "display: none;"; ?>">		
-				<th>Y max:</th><td><input  type="number"  value="<? printf($yMax); ?>" id="yScaleMax" style="width: 50px;"><span id="degUnit1">&deg;<? echo $deg; ?><span></td>
+			<tr class="collapse">
+				<th class="manualScale">Y min:</th><td id="tdwhite1" class="manualScale"><input  type="number"  value="<? printf($yMin); ?>" id="yScaleMin" style="width: 50px;"><span id="degUnit">&deg;<? echo $deg; ?></span></td>
+				<td class="manualScale" rowspan="2" style="text-align: center;">
+					<button id="buttonScale" onclick="setYMinMaxButton()" >Apply</button>
+				</td>
 			</tr>
-			<tr class="yScaleSettings" style="<? if ( "auto" == $yScaleMode ) echo "display: none;"; ?>">
-				<th colspan="2"><button style="margin-right:10px;" onclick="switchDegUnit()">Switch to <span id="degUnit2">&deg;<? echo $oDeg; ?><span></button><button onclick="setYMinMaxButton()">Apply</button></th>
+			<tr class="collapse">			
+				<th class="manualScale">Y max:</th><td id="tdwhite2" class="manualScale"><input  type="number"  value="<? printf($yMax); ?>" id="yScaleMax" style="width: 50px;" ><span id="degUnit1">&deg;<? echo $deg; ?></span></td>
+				
+			</tr>
+			<tr class="collapse">
+				<th>Update Chart:</th>
+				<td colspan="2"> Every
+					<select id="chartSetRefresh">
+						<option value="30"  <? if ( 30  == $_COOKIE["refSec"] ) printf("selected") ?>>30 seconds</option>
+						<option value="60"  <? if ( 60  == $_COOKIE["refSec"] ) printf("selected") ?>>1 minute</option>
+						<option value="300" <? if ( 300 == $_COOKIE["refSec"] ) printf("selected") ?>>5 minute</option>
+						<option value="600" <? if ( 600 == $_COOKIE["refSec"] ) printf("selected") ?>>10 minute</option>
+					</select>
+					<button onclick="chartSetRefresh()">Apply</button>
+				</td>
+				
+			</tr>
+			<tr class="collapse">
+				<th>Temperature Units:</th>
+				<td colspan="2">
+					<input onclick="switchDegUnit()" name="tempRadio" type="radio" value="C" <? if ( "C"  == $_COOKIE["deg"] ) printf("checked") ?>>&deg;C</option><br>
+					<input onclick="switchDegUnit()" name="tempRadio" type="radio" value="F" <? if ( "F"  == $_COOKIE["deg"] ) printf("checked") ?>>&deg;F</option>
+				</td>
+				
+			</tr>
+			<tr class="collapse">
+				<th>Widescreen:</th>
+				<td id="widescreen" colspan="2">
+					<input onclick="goWideScreen('true')" type="radio" name="wideRadio" value="true" <? if ( "true"  == $_COOKIE["wideScreen"] ) printf("checked") ?>> True<br>
+					<input onclick="goWideScreen('false')" type="radio" name="wideRadio" value="false"<? if ( "false"  == $_COOKIE["wideScreen"] ) printf("checked") ?>> False
+				</td>
+				
 			</tr>
 		</table>
+
+	<div id="bar" style="width: 100%; position: fixed; bottom: 0; left: 0; z-index: 2; background: #e0e0e0; text-align: center;">
+		<span id="bottomar" style="margin-left: 10px; float: left;" >Current Values updated approximately <span id="pageTimer">Loading...</span> ago</span>
+		<span  style="margin-right: 10px; float: right;" >Chart updated approximately <span id="chartTimer">Loading...</span> ago</span>
 	</div>
 
-	
 
-</div>
-
-<?
-require $_SERVER["DOCUMENT_ROOT"] . "/world_foot.php";
-?>
+</body>
+</html>
