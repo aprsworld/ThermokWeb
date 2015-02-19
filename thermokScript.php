@@ -42,7 +42,7 @@ $(document).ready(function(){
 var plot;
 
 function noTimerLoad(){
-	var url="<? printf(VIEW_BUILDER_ADDR); ?>/jsonNonView.php?station_id=<? echo $station_id; ?>";	
+	var url="<? printf(VIEW_BUILDER_ADDR); ?>/jsonThermok.php?station_id=<? echo $station_id; ?>";	
 	console.log("notimerload");
 	$.getJSON(url, 
 		function(data) {
