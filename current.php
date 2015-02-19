@@ -101,7 +101,8 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 
 ?>
 
-	<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.3.min.js"></script><script type="text/javascript" src="/data/jQueryRotate.2.2.js"></script>
+	<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+	<script type="text/javascript" src="http://ian.aprsworld.com/data/jQueryRotate.2.2.js"></script>
 	<script language="javascript" type="text/javascript" src="http://ian.aprsworld.com/javascript/timeFunctions.js"></script>
 	<script language="javascript" type="text/javascript" src="http://ian.aprsworld.com/data/date.js"></script>
 	<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="/data/excanvas.min.js"></script><![endif]-->
