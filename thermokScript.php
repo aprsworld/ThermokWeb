@@ -205,7 +205,9 @@ function updateHours(){
 		return;
 	}
 
-	$("#titleChartHours").html(hours);	
+	$("#titleChartHours").html(hours);
+
+	setCookie("chartHours",hours, 365);	
 
 	window.location.replace("?station_id=<? echo $station_id; ?>");
 	//plotGraph(hours);

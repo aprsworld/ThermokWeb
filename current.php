@@ -275,7 +275,7 @@ if ( !isset($_COOKIE["wideScreen"]) ) {
 				<th rowspan="1">Hours:</th>
 				<td colspan="2"> 
 					<input type="number" min="1" max="168" value="<? echo $chartHours; ?>" id="hours" style="width: 50px;">
-					<button class="controlButton" onclick="updateHours();">Update hours</button>
+					<button class="controlButton" onclick="updateHours();">Apply</button>
 				</td>
 			</tr>
 			<tr class="collapse">
