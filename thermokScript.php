@@ -36,7 +36,7 @@ $(document).ready(function(){
 	<? } ?>
 
 	$(document).scrollTop( $("#currentTable").offset().top );
-	chartTick();
+	//chartTick();
 });
 
 var plot;
@@ -106,19 +106,23 @@ function disableManual(){
 }
 
 function setYMinMaxButton(){
-	if( -1 != $("input[name=tempRadio]:checked").val().indexOf("C") ){
-		setYMinMax($("#yScaleMin").val(),$("#yScaleMax").val());
-		//
+	if( parseFloat($("#yScaleMin").val()) < parseFloat($("#yScaleMax").val()) ){
+		if( -1 != $("input[name=tempRadio]:checked").val().indexOf("C") ){
+			setYMinMax($("#yScaleMin").val(),$("#yScaleMax").val());
+			//
+		} else {
+			setYMinMax((($("#yScaleMin").val() -32) * 5/9) ,(($("#yScaleMax").val() -32) * 5/9));
+			//setCookie('deg',"F",365);
+		}
+
+		setCookie('yMin',$("#yScaleMin").val(),365);
+		setCookie('yMax',$("#yScaleMax").val(),365);
 	} else {
-		setYMinMax((($("#yScaleMin").val() -32) * 5/9) ,(($("#yScaleMax").val() -32) * 5/9));
-		//setCookie('deg',"F",365);
+		alert("Min ("+$("#yScaleMin").val()+") cannot be higher than, or equal to, max ("+$("#yScaleMax").val()+")");
 	}
-
-	setCookie('yMin',$("#yScaleMin").val(),365);
-	setCookie('yMax',$("#yScaleMax").val(),365);
-
 }
 
+/* retrieve cookie using javascript */
 function getCookie(cname) {
     var name = cname + "=";
     var ca = document.cookie.split(';');
@@ -130,6 +134,7 @@ function getCookie(cname) {
     return "";
 }
 
+/* sets the min and max for the y axis in the chart */
 function setYMinMax(a, b) {
 	
 	plot.getOptions().yaxes[0].min = a;
@@ -138,7 +143,10 @@ function setYMinMax(a, b) {
 	plot.draw();
 
 }
+
 var miny, maxy;
+
+/* sets the y axis settings in the chart */
 function yScaleSettings(){
 	//console.log($("input[name=scaleRadio]:checked").val());
 	if ( "Manual" == $.trim($("input[name=scaleRadio]:checked").val())) {
@@ -172,21 +180,8 @@ function yScaleSettings(){
 	}
 }
 
-function toggleAlarmPos(){
 
-
-	if ( "0px" == $("#chartControl").css("bottom") ) {
-
-		alarmUp();
-
-	} else {
-
-		alarmDown();
-
-	}
-}
-
-
+/* sets the browser cookie using javascript */
 function setCookie(c_name,value,exdays){
 		var exdate=new Date();
 		exdate.setDate(exdate.getDate() + 30);
@@ -194,6 +189,7 @@ function setCookie(c_name,value,exdays){
 		document.cookie=c_name + "=" + c_value;
 }
 
+/* changes the amount of hours that the chart spans */
 function updateHours(){
 
 	var hours = $("#hours").val();
@@ -214,6 +210,7 @@ function updateHours(){
 
 }
 
+/* converts the json objects returned from chartDataJson.php to arrays in Flot format */
 function obToAr(obj){
 	var ar = [];
 	for (key in obj) {
@@ -222,6 +219,7 @@ function obToAr(obj){
 	return ar;
 }
 
+/* converts the timestamp to a human readable date string for use in the chart */
 var tickFormat = function (val) {
 	if(getCookie("deg") == "F"){				
 		return (val* 9 / 5 + 32)+"&deg;F";
@@ -230,6 +228,7 @@ var tickFormat = function (val) {
 	} 
 }
 
+/* get chart data from json page and plot it */
 function plotGraph(hours){
 
 	if ( null == hours ) hours = 24;
@@ -330,8 +329,8 @@ function plotGraph(hours){
 				<?
 				} else {
 				?>
-				min: <? printf($yMin); ?>,
-				max: <? printf($yMax); ?> 
+				min: getCookie("yMin"),
+				max: getCookie("yMax")
 				<?
 				}
 

@@ -136,9 +136,10 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 				function(data) {
 					
 					if(lastDate!=data.packet_date){
-						pageSeconds=0;//data.ageSeconds;
+						pageSeconds=data.ageSeconds;
 						lastDate=data.packet_date;
 						console.log("new current data");
+						plotGraph(<? echo $chartHours; ?>);
 					}
 					<? echo $pScript; ?>
 
@@ -151,15 +152,20 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 
 					}
 				});
-			setTimeout(loadData,10000);
+			//setTimeout(loadData,10000);
 		}
 
 		function pageTimer(){
 			$("#pageTimer").html(secToTimeDate(pageSeconds));
-			$("#chartTimer").html(secToTimeDate(chartAge));
+			//$("#chartTimer").html(secToTimeDate(pageSeconds));
 			$("#pageAge").html(secToTimeDate(pageSeconds));
 			pageSeconds++;
 			chartAge++;
+			if ( (pageSeconds == <? echo $deviceInfo["updateRate"]; ?>) || ( (pageSeconds >= <? echo $deviceInfo["updateRate"]; ?>) && ( pageSeconds % <? echo $deviceInfo["updateRate"]; ?> == 5  ) ) ) {
+				console.log("load now");
+				loadData();
+			}
+
 			setTimeout(pageTimer, 1000);
 		}
 	</script>
@@ -231,17 +237,7 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 
 <?
 
-$deg = "F";
-$oDeg = "C";
-
-if (isset($_COOKIE["deg"])){
-	$deg = $_COOKIE["deg"];
-	if ( "C" == $deg ){
-		$oDeg="F";
-	} else {
-		$oDeg="C";
-	}
-}	
+$deg = "C";
 
 ?>
 
@@ -295,6 +291,7 @@ if ( !isset($_COOKIE["wideScreen"]) ) {
 				<th class="manualScale">Y max:</th><td id="tdwhite2" class="manualScale"><input  type="number"  value="<? printf($yMax); ?>" id="yScaleMax" style="width: 50px;" ><span id="degUnit1">&deg;<? echo $deg; ?></span></td>
 				
 			</tr>
+			<!--			
 			<tr class="collapse">
 				<th>Update Chart:</th>
 				<td colspan="2"> Every
@@ -308,6 +305,7 @@ if ( !isset($_COOKIE["wideScreen"]) ) {
 				</td>
 				
 			</tr>
+			-->
 			<tr class="collapse">
 				<th>Temperature Units:</th>
 				<td colspan="2">
@@ -328,7 +326,7 @@ if ( !isset($_COOKIE["wideScreen"]) ) {
 
 	<div id="bar" style="width: 100%; position: fixed; bottom: 0; left: 0; z-index: 2; background: #e0e0e0; text-align: center;">
 		<span id="bottomar" style="margin-left: 10px; float: left;" >Current Values updated approximately <span id="pageTimer">Loading...</span> ago</span>
-		<span  style="margin-right: 10px; float: right;" >Chart updated approximately <span id="chartTimer">Loading...</span> ago</span>
+		<!--<span  style="margin-right: 10px; float: right;" >Chart updated approximately <span id="chartTimer">Loading...</span> ago</span>-->
 	</div>
 
 
