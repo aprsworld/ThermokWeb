@@ -236,8 +236,11 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 </div>
 
 <?
-
 $deg = "C";
+if ( isset($_COOKIE["deg"]) ) {
+	$deg = $_COOKIE["deg"];
+}
+
 
 ?>
 
