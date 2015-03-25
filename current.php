@@ -289,13 +289,14 @@ if ( !isset($_COOKIE["wideScreen"]) ) {
 				</td>
 			</tr>
 			<tr class="collapse">
-				<th class="manualScale">Y min:</th><td id="tdwhite1" class="manualScale"><input  type="number"  value="<? printf($yMin); ?>" id="yScaleMin" style="width: 50px;"><span id="degUnit">&deg;<? echo $deg; ?></span></td>
+				<th class="manualScale">Y max:</th><td id="tdwhite2" class="manualScale"><input  type="number"  value="<? printf($yMax); ?>" id="yScaleMax" style="width: 50px;" ><span id="degUnit1">&deg;<? echo $deg; ?></span></td>
 				<td class="manualScale" rowspan="2" style="text-align: center;">
 					<button id="buttonScale" onclick="setYMinMaxButton()" >Apply</button>
 				</td>
 			</tr>
-			<tr class="collapse">			
-				<th class="manualScale">Y max:</th><td id="tdwhite2" class="manualScale"><input  type="number"  value="<? printf($yMax); ?>" id="yScaleMax" style="width: 50px;" ><span id="degUnit1">&deg;<? echo $deg; ?></span></td>
+			<tr class="collapse">	
+				<th class="manualScale">Y min:</th><td id="tdwhite1" class="manualScale"><input  type="number"  value="<? printf($yMin); ?>" id="yScaleMin" style="width: 50px;"><span id="degUnit">&deg;<? echo $deg; ?></span></td>		
+				
 				
 			</tr>
 			<!--			
