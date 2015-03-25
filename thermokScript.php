@@ -329,8 +329,8 @@ function plotGraph(hours){
 				<?
 				} else {
 				?>
-				min: getCookie("yMin"),
-				max: getCookie("yMax")
+				min: getCookieMin("yMin"),
+				max: getCookieMax("yMax")
 				<?
 				}
 
@@ -394,4 +394,32 @@ function collapseSettings(){
 
 
 
+function getCookieMin(){
 
+	var val = getCookie("yMin");
+	//return val;
+
+	if(getCookie("deg") == "F"){
+		//console.log("min= "+(val* 9 / 5 + 32) );				
+		return ((val-32) * 5/9);
+	} else {
+		//console.log("min= "+(val) );
+		return val;
+	} 
+	
+
+}
+function getCookieMax(){
+
+	var val = getCookie("yMax");
+	//return val;
+
+	if(getCookie("deg") == "F"){
+		//console.log("max= "+(val* 9 / 5 + 32) );				
+		return ((val-32) * 5/9);
+	} else {
+		//console.log("max= "+(val) );
+		return val;
+	} 
+
+}

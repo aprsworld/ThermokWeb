@@ -158,7 +158,7 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 		function pageTimer(){
 			$("#pageTimer").html(secToTimeDate(pageSeconds));
 			//$("#chartTimer").html(secToTimeDate(pageSeconds));
-			$("#pageAge").html(secToTimeDate(pageSeconds));
+			$("#pageAge").html(pageSpecificTweak(secToTimeDate(pageSeconds)));
 			pageSeconds++;
 			chartAge++;
 			if ( (pageSeconds == <? echo $deviceInfo["updateRate"]; ?>) || ( (pageSeconds >= <? echo $deviceInfo["updateRate"]; ?>) && ( pageSeconds % <? echo $deviceInfo["updateRate"]; ?> == 5  ) ) ) {
@@ -167,6 +167,10 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/winddata/windFunctions.php";
 			}
 
 			setTimeout(pageTimer, 1000);
+		}
+
+		function pageSpecificTweak(x){
+			return (x.replace(" ", "<br>"));
 		}
 	</script>
 
